@@ -1,0 +1,32 @@
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "frontend/src/components/**"
+          - "frontend/src/app/**"
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "services/**"
+          - "services/**"
+
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "prisma/**"
+          - "drizzle/**"
+
+auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "frontend/src/lib/auth/**"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+
+CI/CD:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"

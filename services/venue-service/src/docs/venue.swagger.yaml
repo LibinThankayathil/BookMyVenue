@@ -1,0 +1,438 @@
+paths:
+  /venues:
+    get:
+      summary: Get all approved venues
+      description: Retrieve a list of all approved venues with their amenities, capacities, and sessions.
+      tags: [Venue Management]
+      responses:
+        200:
+          description: A list of approved venues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+    post:
+      summary: Create a new venue
+      description: Create a new venue listing. The listing will start in `PENDING` status and require admin approval.
+      tags: [Venue Management]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVenuePayload'
+      responses:
+        201:
+          description: Venue created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Venue'
+        400:
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - missing owner role context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /venues/my-venues:
+    get:
+      summary: List owner's venues
+      description: Retrieve all venues owned by the current authenticated owner.
+      tags: [Venue Management]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        200:
+          description: A list of owner's venues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+        403:
+          description: Forbidden - missing owner role context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /venues/{id}:
+    get:
+      summary: Get a venue by ID
+      description: Retrieve a specific venue's complete details by its numeric ID.
+      tags: [Venue Management]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue
+          example: 12
+      responses:
+        200:
+          description: Venue details loaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Venue'
+        400:
+          description: Invalid venue ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update a venue
+      description: Update details of an existing venue listing. Modifying venue details resets its status back to `PENDING` for admin re-evaluation.
+      tags: [Venue Management]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue to update
+          example: 12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVenuePayload'
+      responses:
+        200:
+          description: Venue updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Venue'
+        400:
+          description: Invalid inputs or Zod validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - caller does not own this venue or lacks OWNER role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a venue
+      description: Permanently delete a venue listing and all of its associated capacities, sessions, amenities, and closures.
+      tags: [Venue Management]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue to delete
+          example: 12
+      responses:
+        200:
+          description: Venue deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Venue deleted successfully."
+        400:
+          description: Invalid venue ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - caller does not own this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /venues/{id}/closures:
+    get:
+      summary: List closures for a venue
+      description: Retrieve all scheduled closure windows (e.g. holidays, maintenance blocks) for the specified venue.
+      tags: [Venue Closures]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue
+          example: 12
+      responses:
+        200:
+          description: Closures list loaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VenueClosure'
+        400:
+          description: Invalid venue ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - caller does not own this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create a closure for a venue
+      description: Block booking availability for a specific time range due to maintenance, private events, or holidays.
+      tags: [Venue Closures]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue
+          example: 12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClosurePayload'
+      responses:
+        201:
+          description: Venue closure registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/VenueClosure'
+        400:
+          description: Invalid dates, start time must be before end time, or schema mismatched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - caller does not own this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /venues/{id}/closures/{closureId}:
+    put:
+      summary: Update a closure slot
+      description: Update details or change the blocked date-time range of an existing closure entry.
+      tags: [Venue Closures]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue
+          example: 12
+        - in: path
+          name: closureId
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the closure to update
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClosurePayload'
+      responses:
+        200:
+          description: Venue closure updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/VenueClosure'
+        400:
+          description: Invalid time ranges, validation schemas failed, or IDs not integers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - caller does not own this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue or closure not found, or closure doesn't belong to this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a closure slot
+      description: Permanently remove a closure entry, releasing the blocked dates back to public booking availability.
+      tags: [Venue Closures]
+      parameters:
+        - $ref: '#/components/parameters/XUserId'
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the venue
+          example: 12
+        - in: path
+          name: closureId
+          required: true
+          schema:
+            type: integer
+          description: The numeric ID of the closure to delete
+          example: 1
+      responses:
+        200:
+          description: Venue closure deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Venue closure deleted successfully."
+        400:
+          description: Invalid venue or closure ID formats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Forbidden - caller does not own this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue or closure not found, or closure doesn't belong to this venue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

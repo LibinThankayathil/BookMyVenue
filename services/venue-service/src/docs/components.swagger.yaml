@@ -1,0 +1,395 @@
+components:
+  parameters:
+    XUserRoles:
+      in: header
+      name: x-user-roles
+      required: true
+      schema:
+        type: string
+      description: Comma-separated list of user roles injected by the gateway (e.g. 'OWNER,USER')
+      example: OWNER
+    XUserId:
+      in: header
+      name: x-user-id
+      required: true
+      schema:
+        type: string
+      description: The authenticated user's ID injected by the gateway
+      example: "123"
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Validation failed"
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+              path:
+                type: array
+                items:
+                  type: string
+    Venue:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        ownerId:
+          type: integer
+          example: 123
+        title:
+          type: string
+          example: "Grand Ballroom"
+        description:
+          type: string
+          nullable: true
+          example: "A premium event hall."
+        category:
+          type: string
+          example: "wedding_hall"
+        basePrice:
+          type: string
+          example: "15000.00"
+        pricingType:
+          type: string
+          enum: [PER_HOUR, PER_SESSION]
+          example: "PER_HOUR"
+        bufferTimeMinutes:
+          type: integer
+          example: 60
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+          example: "PENDING"
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueAmenity'
+        capacities:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueCapacity'
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/VenueSession'
+    VenueAmenity:
+      type: object
+      properties:
+        venueId:
+          type: integer
+          example: 12
+        amenityId:
+          type: integer
+          example: 1
+        amenity:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: "Wi-Fi"
+            iconKey:
+              type: string
+              nullable: true
+              example: "wifi"
+    VenueCapacity:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        venueId:
+          type: integer
+          example: 12
+        type:
+          type: string
+          example: "SEATING"
+        maxPeople:
+          type: integer
+          example: 100
+        isSeparate:
+          type: boolean
+          example: false
+    VenueSession:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        venueId:
+          type: integer
+          example: 12
+        name:
+          type: string
+          example: "Morning"
+        startTime:
+          type: string
+          example: "08:00"
+        endTime:
+          type: string
+          example: "12:00"
+        sessionPrice:
+          type: string
+          example: "5000.00"
+    VenueClosure:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        venueId:
+          type: integer
+          example: 12
+        type:
+          type: string
+          enum: [MAINTENANCE, HOLIDAY, PRIVATE_EVENT]
+          example: "MAINTENANCE"
+        startTime:
+          type: string
+          format: date-time
+          example: "2026-06-25T08:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2026-06-25T17:00:00.000Z"
+        description:
+          type: string
+          nullable: true
+          example: "AC Repair work"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateVenuePayload:
+      type: object
+      required:
+        - title
+        - category
+        - basePrice
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+          example: "Grand Ballroom"
+        description:
+          type: string
+          example: "A premium event hall."
+        category:
+          type: string
+          example: "wedding_hall"
+        basePrice:
+          type: number
+          minimum: 0.01
+          example: 15000.00
+        pricingType:
+          type: string
+          enum: [PER_HOUR, PER_SESSION]
+          default: PER_HOUR
+          example: "PER_HOUR"
+        bufferTimeMinutes:
+          type: integer
+          minimum: 0
+          default: 60
+          example: 60
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+          example: []
+        amenities:
+          type: array
+          items:
+            type: integer
+          example: [1, 2]
+        capacities:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - maxPeople
+            properties:
+              type:
+                type: string
+                example: "Seating"
+              maxPeople:
+                type: integer
+                minimum: 1
+                example: 100
+              isSeparate:
+                type: boolean
+                default: false
+                example: false
+        sessions:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - startTime
+              - endTime
+              - sessionPrice
+            properties:
+              name:
+                type: string
+                example: "Morning"
+              startTime:
+                type: string
+                pattern: "^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
+                example: "08:00"
+              endTime:
+                type: string
+                pattern: "^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
+                example: "12:00"
+              sessionPrice:
+                type: number
+                minimum: 0.01
+                example: 5000.00
+    UpdateVenuePayload:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 255
+          example: "Grand Ballroom"
+        description:
+          type: string
+          example: "A premium event hall."
+        category:
+          type: string
+          example: "wedding_hall"
+        basePrice:
+          type: number
+          minimum: 0.01
+          example: 15000.00
+        pricingType:
+          type: string
+          enum: [PER_HOUR, PER_SESSION]
+          example: "PER_HOUR"
+        bufferTimeMinutes:
+          type: integer
+          minimum: 0
+          example: 60
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        amenities:
+          type: array
+          items:
+            type: integer
+        capacities:
+          type: array
+          items:
+            type: object
+            required:
+              - type
+              - maxPeople
+            properties:
+              type:
+                type: string
+                example: "Seating"
+              maxPeople:
+                type: integer
+                minimum: 1
+                example: 100
+              isSeparate:
+                type: boolean
+                default: false
+                example: false
+        sessions:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - startTime
+              - endTime
+              - sessionPrice
+            properties:
+              name:
+                type: string
+                example: "Morning"
+              startTime:
+                type: string
+                pattern: "^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
+                example: "08:00"
+              endTime:
+                type: string
+                pattern: "^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$"
+                example: "12:00"
+              sessionPrice:
+                type: number
+                minimum: 0.01
+                example: 5000.00
+    CreateClosurePayload:
+      type: object
+      required:
+        - type
+        - startTime
+        - endTime
+      properties:
+        type:
+          type: string
+          enum: [MAINTENANCE, HOLIDAY, PRIVATE_EVENT]
+          example: "MAINTENANCE"
+        startTime:
+          type: string
+          format: date-time
+          example: "2026-06-25T08:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2026-06-25T17:00:00.000Z"
+        description:
+          type: string
+          maxLength: 500
+          example: "AC Repair work"
+    UpdateClosurePayload:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [MAINTENANCE, HOLIDAY, PRIVATE_EVENT]
+          example: "MAINTENANCE"
+        startTime:
+          type: string
+          format: date-time
+          example: "2026-06-25T08:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          example: "2026-06-25T17:00:00.000Z"
+        description:
+          type: string
+          maxLength: 500
+          example: "AC Repair work"

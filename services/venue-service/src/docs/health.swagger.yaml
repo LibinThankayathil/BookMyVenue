@@ -1,0 +1,8 @@
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      tags: [Health]
+      responses:
+        200:
+          description: Service is healthy

@@ -1,0 +1,365 @@
+paths:
+  /admin/venues:
+    get:
+      summary: List all venues
+      description: |
+        Returns all venue listings regardless of their status (PENDING, APPROVED, REJECTED), ordered by creation date (newest first).
+        Intended for admin dashboard management and overview.
+
+        **Authorization:** Requires the `ADMIN` role, enforced via the `x-user-roles` header injected by the API gateway.
+        The gateway validates the JWT and forwards the decoded roles; this endpoint then checks for the `ADMIN` role.
+      tags: [Admin — Venues]
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        200:
+          description: A list of all venues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+              example:
+                success: true
+                data:
+                  - id: 7
+                    ownerId: 3
+                    title: Skyline Events Loft
+                    description: "A modern industrial loft with rooftop access. Located in Downtown, Westside."
+                    category: event_space
+                    basePrice: "18500.00"
+                    pricingType: PER_HOUR
+                    bufferTimeMinutes: 60
+                    status: PENDING
+                    imageUrls:
+                      - https://res.cloudinary.com/demo/image/upload/v1/venues/loft.jpg
+                    createdAt: "2026-06-19T14:22:10.000Z"
+                    updatedAt: "2026-06-19T14:22:10.000Z"
+                    amenities:
+                      - venueId: 7
+                        amenityId: 1
+                        amenity:
+                          id: 1
+                          name: Wi-Fi
+                          iconKey: wifi
+                    capacities:
+                      - id: 12
+                        venueId: 7
+                        type: SEATING
+                        maxPeople: 150
+                        isSeparate: false
+                    sessions: []
+        403:
+          description: Forbidden — caller does not have the `ADMIN` role or the role header is missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingRole:
+                  summary: Role header not present
+                  value:
+                    success: false
+                    message: "Forbidden: Access restricted to admins (missing role context)."
+                wrongRole:
+                  summary: Caller is not an admin
+                  value:
+                    success: false
+                    message: "Forbidden: Access restricted to admins."
+        401:
+          description: Unauthorized — no JWT provided to the gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Unauthorized: Authentication token required."
+
+  /admin/venues/pending:
+    get:
+      summary: List all pending venues
+      description: |
+        Returns all venue listings that currently have a `PENDING` status, ordered by submission date (oldest first).
+        Intended for admin review before approval or rejection.
+
+        **Authorization:** Requires the `ADMIN` role, enforced via the `x-user-roles` header injected by the API gateway.
+        The gateway validates the JWT and forwards the decoded roles; this endpoint then checks for the `ADMIN` role.
+      tags: [Admin — Venues]
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+      responses:
+        200:
+          description: A list of all pending venues
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Venue'
+              example:
+                success: true
+                data:
+                  - id: 7
+                    ownerId: 3
+                    title: Skyline Events Loft
+                    description: "A modern industrial loft with rooftop access. Located in Downtown, Westside."
+                    category: event_space
+                    basePrice: "18500.00"
+                    pricingType: PER_HOUR
+                    bufferTimeMinutes: 60
+                    status: PENDING
+                    imageUrls:
+                      - https://res.cloudinary.com/demo/image/upload/v1/venues/loft.jpg
+                    createdAt: "2026-06-19T14:22:10.000Z"
+                    updatedAt: "2026-06-19T14:22:10.000Z"
+                    amenities:
+                      - venueId: 7
+                        amenityId: 1
+                        amenity:
+                          id: 1
+                          name: Wi-Fi
+                          iconKey: wifi
+                    capacities:
+                      - id: 12
+                        venueId: 7
+                        type: SEATING
+                        maxPeople: 150
+                        isSeparate: false
+                    sessions: []
+        403:
+          description: Forbidden — caller does not have the `ADMIN` role or the role header is missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingRole:
+                  summary: Role header not present
+                  value:
+                    success: false
+                    message: "Forbidden: Access restricted to admins (missing role context)."
+                wrongRole:
+                  summary: Caller is not an admin
+                  value:
+                    success: false
+                    message: "Forbidden: Access restricted to admins."
+        401:
+          description: Unauthorized — no JWT provided to the gateway
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Unauthorized: Authentication token required."
+
+  /admin/venues/{id}/approve:
+    patch:
+      summary: Approve a pending venue
+      description: |
+        Updates the specified venue's `status` from `PENDING` to `APPROVED`.
+        Once approved, the venue will appear in the public listing returned by `GET /venues`.
+
+        **Authorization:** Requires the `ADMIN` role.
+
+        > **Note:** Approving a venue that is already `APPROVED` or `REJECTED` will still succeed — Prisma
+        > performs an unconditional update. Idempotent for `APPROVED` venues.
+      tags: [Admin — Venues]
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The numeric ID of the venue to approve
+          example: 7
+      responses:
+        200:
+          description: Venue approved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Venue approved successfully.
+                  data:
+                    $ref: '#/components/schemas/VenueStatusUpdate'
+              example:
+                success: true
+                message: Venue approved successfully.
+                data:
+                  id: 7
+                  ownerId: 3
+                  title: Skyline Events Loft
+                  status: APPROVED
+                  updatedAt: "2026-06-20T00:30:00.000Z"
+        400:
+          description: Invalid venue ID format (non-integer path parameter)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Invalid venue ID format.
+        403:
+          description: Forbidden — caller does not have the `ADMIN` role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found (Prisma record not found error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: No Venue found
+
+  /admin/venues/{id}/reject:
+    patch:
+      summary: Reject a pending venue
+      description: |
+        Updates the specified venue's `status` from `PENDING` to `REJECTED`.
+        Rejected venues are **not** returned by the public `GET /venues` endpoint and will not be bookable.
+
+        **Authorization:** Requires the `ADMIN` role.
+
+        The venue record remains in the database after rejection; owners can view it on their dashboard.
+        A future admin may reverse the decision by approving the same venue ID.
+      tags: [Admin — Venues]
+      parameters:
+        - $ref: '#/components/parameters/XUserRoles'
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The numeric ID of the venue to reject
+          example: 7
+      responses:
+        200:
+          description: Venue rejected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Venue rejected.
+                  data:
+                    $ref: '#/components/schemas/VenueStatusUpdate'
+              example:
+                success: true
+                message: Venue rejected.
+                data:
+                  id: 7
+                  ownerId: 3
+                  title: Skyline Events Loft
+                  status: REJECTED
+                  updatedAt: "2026-06-20T00:32:00.000Z"
+        400:
+          description: Invalid venue ID format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Invalid venue ID format.
+        403:
+          description: Forbidden — caller does not have the `ADMIN` role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Venue not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: No Venue found
+
+components:
+  schemas:
+    VenueStatusUpdate:
+      description: |
+        Slim venue object returned after a status-change action (approve/reject).
+        Contains only the fields updated by the operation — use `GET /venues/{id}` for the full record.
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 7
+        ownerId:
+          type: integer
+          example: 3
+        title:
+          type: string
+          example: Skyline Events Loft
+        description:
+          type: string
+          nullable: true
+          example: "A modern industrial loft with rooftop access."
+        category:
+          type: string
+          example: event_space
+        basePrice:
+          type: string
+          description: Decimal value returned as a string by Prisma
+          example: "18500.00"
+        pricingType:
+          type: string
+          enum: [PER_HOUR, PER_SESSION]
+          example: PER_HOUR
+        bufferTimeMinutes:
+          type: integer
+          example: 60
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+          example: APPROVED
+          description: The new status after the action was applied
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp of the status change
